@@ -114,6 +114,11 @@ def main():
     submit_parser.add_argument("--problem-id", type=int, required=True, help="Problem ID")
     submit_parser.add_argument("--git-url", type=str, required=True, help="Git repository URL")
 
+    # Submit code file content as src.hpp
+    submit_file_parser = subparsers.add_parser("submit-file", help="Submit local file content as code")
+    submit_file_parser.add_argument("--problem-id", type=int, required=True, help="Problem ID")
+    submit_file_parser.add_argument("--file", type=str, required=True, help="Path to code file (will be sent as code)")
+
     # Sub-command for checking submission status
     status_parser = subparsers.add_parser("status", help="Check submission status")
     status_parser.add_argument("--submission-id", type=int, required=True, help="Submission ID")
@@ -136,6 +141,18 @@ def main():
         result = client.get_submission_detail(args.submission_id)
     elif args.command == "abort":
         result = client.abort_submission(args.submission_id)
+    elif args.command == "submit-file":
+        # Read local file and submit its content as code with language=c++
+        try:
+            with open(args.file, 'r') as f:
+                code = f.read()
+            data = {"language": "c++", "code": code}
+            result = client._make_request("POST", f"/problem/{args.problem_id}/submit", data=data)
+            if result and 'id' in result:
+                client._save_submission_id(result['id'])
+        except Exception as e:
+            print(f"Failed to read or submit file: {e}")
+            result = None
 
     if result:
         print(json.dumps(result))
