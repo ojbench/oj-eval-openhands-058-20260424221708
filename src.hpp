@@ -81,8 +81,8 @@ private:
         mult[idx("ground")][idx("flying")] = 0.0; // no effect
         // Flying
         mult[idx("flying")][idx("grass")] = 2.0;
-        // In standard chart, Flying vs Electric is neutral (1.0)
-        mult[idx("flying")][idx("electric")] = 1.0;
+        // Flying vs Electric is not very effective
+        mult[idx("flying")][idx("electric")] = 0.5;
         // Dragon
         mult[idx("dragon")][idx("dragon")] = 2.0;
     }
@@ -230,7 +230,9 @@ public:
         std::vector<std::pair<int, std::string>> hits; // (id, name)
         for (const auto &kv : by_id) {
             const auto &p = kv.second;
-            if ( (p.type_mask & query) == query ) hits.emplace_back(p.id, std::string(p.name));
+            // Match if Pokemon has all query types OR at least one type? The statement is ambiguous.
+            // We choose inclusive OR to be more user-friendly: any overlap qualifies.
+            if ( (p.type_mask & query) != 0 ) hits.emplace_back(p.id, std::string(p.name));
         }
         if (hits.empty()) return std::string("None");
         std::sort(hits.begin(), hits.end()); // id ascending
