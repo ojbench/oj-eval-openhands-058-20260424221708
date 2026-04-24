@@ -195,7 +195,8 @@ public:
             throw ArgumentException(m.c_str());
         }
         if (mask == 0) {
-            std::string m = std::string("Argument Error: PM Type Invalid (") + ")";
+            std::string m = std::string("Argument Error: PM Type Invalid (");
+            m += ")";
             throw ArgumentException(m.c_str());
         }
         if (by_id.count(id) || by_name.count(name)) return false;
@@ -230,9 +231,8 @@ public:
         std::vector<std::pair<int, std::string>> hits; // (id, name)
         for (const auto &kv : by_id) {
             const auto &p = kv.second;
-            // Match if Pokemon has all query types OR at least one type? The statement is ambiguous.
-            // We choose inclusive OR to be more user-friendly: any overlap qualifies.
-            if ( (p.type_mask & query) != 0 ) hits.emplace_back(p.id, std::string(p.name));
+            // Must contain all query types
+            if ( (p.type_mask & query) == query ) hits.emplace_back(p.id, std::string(p.name));
         }
         if (hits.empty()) return std::string("None");
         std::sort(hits.begin(), hits.end()); // id ascending
@@ -245,14 +245,15 @@ public:
     }
 
     float attack(const char *type, int id) const {
-        auto it = by_id.find(id);
-        if (it == by_id.end()) return -1.0f;
+        // Exception priority: validate type first
         std::string st = type ? std::string(type) : std::string();
         auto tid = type_index.find(st);
         if (tid == type_index.end()) {
             std::string m = std::string("Argument Error: PM Type Invalid (") + st + ")";
             throw ArgumentException(m.c_str());
         }
+        auto it = by_id.find(id);
+        if (it == by_id.end()) return -1.0f;
         const Pokemon &p = it->second;
         double ans = 1.0;
         // multiply effectiveness for each defending type bit
